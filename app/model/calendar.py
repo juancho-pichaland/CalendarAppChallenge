@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import datetime, date, time
+from datetime import datetime, date, time, timedelta
 from typing import ClassVar
 from app.services.util import generate_unique_id, date_lower_than_today_error, event_not_found_error, \
     reminder_not_found_error, slot_not_available_error
@@ -25,7 +25,7 @@ class Event:
     date_: date
     start_at: time
     end_at: time
-    reminders: list[Reminder] = field(default_factory=list)
+    reminders: list[Reminder] = field(init=False, default_factory=list)
     id: str = field(default_factory=generate_unique_id)
 
     def add_reminder(self, date_time: datetime, type_: str = Reminder.EMAIL):
@@ -33,7 +33,7 @@ class Event:
 
     def delete_reminder(self, reminder_index: int):
         if 0 <= reminder_index < len(self.reminders):
-            self.reminders.pop(reminder_index)
+            del self.reminders[reminder_index]
         else:
             reminder_not_found_error()
 
@@ -53,10 +53,9 @@ class Day:
         self._init_slots()
 
     def _init_slots(self):
-        start_time = time(0, 0)
-        while start_time < time(23, 45):
-            self.slots[start_time] = None
-            start_time = (datetime.combine(date.today(), start_time) + timedelta(minutes=15)).time()
+        for hour in range(24):
+            for minutes in range(0, 60, 15):
+                self.slots[time(hour, minutes)] = None
 
     def add_event(self, event_id: str, start_at: time, end_at: time):
         for slot in self.slots:
